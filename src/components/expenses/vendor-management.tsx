@@ -23,6 +23,7 @@ interface Vendor {
   id: string
   name: string
   total_expenses: number
+  expense_count: number
   last_expense_date?: string
   created_at: string
 }
@@ -39,7 +40,7 @@ export function VendorManagement({ businessId }: VendorManagementProps) {
 
   // Extract unique vendors from expenses
   const vendors = useMemo(() => {
-    const vendorMap = new Map<string, Vendor & { expense_count: number }>()
+    const vendorMap = new Map<string, Vendor>()
 
     expenses.forEach((expense) => {
       if (expense.vendor) {
@@ -166,7 +167,7 @@ export function VendorManagement({ businessId }: VendorManagementProps) {
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">
-                          {(vendor as any).expense_count || 0} expenses
+                          {vendor.expense_count} expenses
                         </Badge>
                       </TableCell>
                     </TableRow>
