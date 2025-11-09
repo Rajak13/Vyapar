@@ -114,34 +114,72 @@ export function ExpenseForm({ businessId, expense, onSuccess, onCancel }: Expens
       const uploadedUrls: string[] = []
 
       for (const file of receiptFiles) {
-        // Generate unique filename
-        const fileExt = file.name.split('.').pop()
-        const fileName = `${businessId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-        
-        // Upload to Supabase storage
-        const { data, error } = await supabase.storage
-          .from('receipts')
-          .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: false
-          })
+        try {
+          // Validate file size (max 10MB)
+          if (file.size > 10 * 1024 * 1024) {
+            console.error(`File ${file.name} is too large (max 10MB)`)
+            continue
+          }
 
-        if (error) {
-          console.error('Upload error:', error)
+          // Validate file type
+          if (!file.type.startsWith('image/')) {
+            console.error(`File ${file.name} is not an image`)
+            continue
+          }
+
+          // Generate unique filename
+          const fileExt = file.name.split('.').pop()
+          const timestamp = Date.now()
+          const randomStr = Math.random().toString(36).substring(7)
+          const fileName = `${businessId}/${timestamp}-${randomStr}.${fileExt}`
+          
+          // Upload to Supabase storage
+          const { data, error } = await supabase.storage
+            .from('receipts')
+            .upload(fileName, file, {
+              cacheControl: '3600',
+              upsert: false,
+              contentType: file.type
+            })
+
+          if (error) {
+            console.error('Upload error:', error.message)
+            console.error('Full error details:', error)
+            
+            // Provide specific error messages
+            if (error.message.includes('not found') || error.message.includes('does not exist')) {
+              throw new Error('Storage bucket "receipts" does not exist. Please create it in Supabase dashboard.')
+            }
+            if (error.message.includes('permission') || error.message.includes('policy') || error.message.includes('JWT')) {
+              throw new Error(`Permission denied: ${error.message}. Please check storage policies in Supabase dashboard.`)
+            }
+            
+            throw new Error(`Upload failed: ${error.message}`)
+          }
+
+          // Get public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('receipts')
+            .getPublicUrl(data.path)
+
+          uploadedUrls.push(publicUrl)
+        } catch (fileError) {
+          console.error(`Failed to upload ${file.name}:`, fileError)
           continue
         }
+      }
 
-        // Get public URL
-        const { data: { publicUrl } } = supabase.storage
-          .from('receipts')
-          .getPublicUrl(fileName)
-
-        uploadedUrls.push(publicUrl)
+      if (uploadedUrls.length === 0 && receiptFiles.length > 0) {
+        throw new Error('Failed to upload any receipts. Please check storage configuration.')
       }
 
       return uploadedUrls
     } catch (error) {
       console.error('Failed to upload receipts:', error)
+      
+      // Show detailed error message
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      alert(`Failed to upload receipts.\n\n${errorMessage}\n\nPlease check:\n1. Storage bucket "receipts" exists\n2. Bucket is set to Public OR has proper RLS policies\n3. You are logged in\n\nSee browser console for details.`)
       return []
     } finally {
       setIsUploading(false)
@@ -150,7 +188,20 @@ export function ExpenseForm({ businessId, expense, onSuccess, onCancel }: Expens
 
   const onSubmit = async (data: ExpenseFormData) => {
     try {
-      const receiptUrls = await uploadReceipts()
+      // Try to upload receipts, but don't fail if upload fails
+      let receiptUrls: string[] = []
+      if (receiptFiles.length > 0) {
+        receiptUrls = await uploadReceipts()
+        // If upload failed but user wants to continue, ask for confirmation
+        if (receiptUrls.length === 0 && receiptFiles.length > 0) {
+          const shouldContinue = window.confirm(
+            'Receipt upload failed. Do you want to save the expense without receipts?'
+          )
+          if (!shouldContinue) {
+            return
+          }
+        }
+      }
       
       const expenseData = {
         business_id: businessId,
@@ -182,6 +233,7 @@ export function ExpenseForm({ businessId, expense, onSuccess, onCancel }: Expens
       onSuccess?.()
     } catch (error) {
       console.error('Failed to save expense:', error)
+      alert('Failed to save expense. Please try again.')
     }
   }
 
@@ -322,8 +374,8 @@ export function ExpenseForm({ businessId, expense, onSuccess, onCancel }: Expens
 
           {/* Receipt Upload */}
           <div className="space-y-4">
-            <Label>Receipt Photos</Label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+            <Label>Receipt Photos (Optional)</Label>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-gray-400 transition-colors">
               <div className="text-center">
                 <Camera className="mx-auto h-12 w-12 text-gray-400" />
                 <div className="mt-4">
@@ -339,16 +391,23 @@ export function ExpenseForm({ businessId, expense, onSuccess, onCancel }: Expens
                     id="receipt-upload"
                     type="file"
                     multiple
-                    accept="image/*"
+                    accept="image/*,image/jpeg,image/png,image/jpg"
                     className="hidden"
                     onChange={(e) => handleReceiptUpload(e.target.files)}
+                    disabled={receiptFiles.length >= 3}
                   />
                 </div>
                 <div className="mt-4 flex justify-center">
-                  <Button type="button" variant="outline" size="sm" asChild>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    asChild
+                    disabled={receiptFiles.length >= 3}
+                  >
                     <Label htmlFor="receipt-upload" className="cursor-pointer">
                       <Upload className="mr-2 h-4 w-4" />
-                      Choose Files
+                      {receiptFiles.length > 0 ? 'Add More' : 'Choose Files'}
                     </Label>
                   </Button>
                 </div>
@@ -359,26 +418,32 @@ export function ExpenseForm({ businessId, expense, onSuccess, onCancel }: Expens
             {receiptPreviews.length > 0 && (
               <div className="grid grid-cols-3 gap-4">
                 {receiptPreviews.map((preview, index) => (
-                  <div key={index} className="relative">
+                  <div key={index} className="relative group">
                     <img
                       src={preview}
                       alt={`Receipt ${index + 1}`}
-                      className="w-full h-24 object-cover rounded-lg border"
+                      className="w-full h-24 object-cover rounded-lg border border-gray-200 group-hover:border-gray-300 transition-colors"
                     />
                     <Button
                       type="button"
                       variant="destructive"
                       size="sm"
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 shadow-md"
                       onClick={() => removeReceipt(index)}
                     >
                       <X className="h-3 w-3" />
                     </Button>
-                    <Badge variant="secondary" className="absolute bottom-1 left-1 text-xs">
-                      {receiptFiles[index]?.name.slice(0, 10)}...
+                    <Badge variant="secondary" className="absolute bottom-1 left-1 text-xs truncate max-w-[90%]">
+                      {receiptFiles[index]?.name.slice(0, 15)}...
                     </Badge>
                   </div>
                 ))}
+              </div>
+            )}
+            
+            {isUploading && (
+              <div className="text-center text-sm text-gray-600">
+                Uploading receipts...
               </div>
             )}
           </div>

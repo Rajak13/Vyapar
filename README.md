@@ -60,7 +60,17 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 ```
 
-4. Run the development server:
+4. Set up Supabase Storage:
+
+Create a storage bucket for receipts in your Supabase dashboard:
+- Go to Storage in your Supabase dashboard
+- Create a new bucket named `receipts`
+- Set it to **Public** (or configure RLS policies as needed)
+- Recommended policies:
+  - Allow authenticated users to upload: `INSERT` for authenticated users
+  - Allow authenticated users to read their own files: `SELECT` for authenticated users where `bucket_id = 'receipts'`
+
+5. Run the development server:
 
 ```bash
 npm run dev

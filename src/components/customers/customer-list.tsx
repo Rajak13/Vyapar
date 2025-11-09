@@ -233,25 +233,35 @@ export function CustomerList({ businessId, searchQuery, isLoading }: CustomerLis
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <DropdownMenu>
+                        <DropdownMenu modal={false}>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <span className="sr-only">Open menu</span>
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setSelectedCustomer(customer)}>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedCustomer(customer)
+                            }}>
                               <Eye className="h-4 w-4 mr-2" />
                               View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setEditingCustomer(customer)}>
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation()
+                              setEditingCustomer(customer)
+                            }}>
                               <Edit className="h-4 w-4 mr-2" />
                               Edit
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 
-                              onClick={() => setDeletingCustomer(customer)}
-                              className="text-red-600"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setDeletingCustomer(customer)
+                              }}
+                              className="text-red-600 focus:text-red-600"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
                               Delete
@@ -287,25 +297,35 @@ export function CustomerList({ businessId, searchQuery, isLoading }: CustomerLis
                           </div>
                         </div>
                       </div>
-                      <DropdownMenu>
+                      <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setSelectedCustomer(customer)}>
+                        <DropdownMenuContent align="end" className="w-40">
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedCustomer(customer)
+                          }}>
                             <Eye className="h-4 w-4 mr-2" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setEditingCustomer(customer)}>
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation()
+                            setEditingCustomer(customer)
+                          }}>
                             <Edit className="h-4 w-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
-                            onClick={() => setDeletingCustomer(customer)}
-                            className="text-red-600"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setDeletingCustomer(customer)
+                            }}
+                            className="text-red-600 focus:text-red-600"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete
