@@ -109,11 +109,36 @@ export function ExpenseForm({ businessId, expense, onSuccess, onCancel }: Expens
 
     setIsUploading(true)
     try {
-      // TODO: Implement actual file upload to Supabase storage
-      // For now, return mock URLs
-      const uploadedUrls = receiptFiles.map((_, index) => 
-        `https://example.com/receipts/${Date.now()}-${index}.jpg`
-      )
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      const uploadedUrls: string[] = []
+
+      for (const file of receiptFiles) {
+        // Generate unique filename
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${businessId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+        
+        // Upload to Supabase storage
+        const { data, error } = await supabase.storage
+          .from('receipts')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          })
+
+        if (error) {
+          console.error('Upload error:', error)
+          continue
+        }
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('receipts')
+          .getPublicUrl(fileName)
+
+        uploadedUrls.push(publicUrl)
+      }
+
       return uploadedUrls
     } catch (error) {
       console.error('Failed to upload receipts:', error)

@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/auth-context'
-import { Menu, Bell, Search, User } from 'lucide-react'
+import { Menu, Search, User } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import {
   DropdownMenu,
@@ -16,7 +16,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
-import { LanguageToggle } from '@/components/ui/language-toggle'
+
 interface HeaderProps {
   onMenuClick: () => void
 }
@@ -62,19 +62,11 @@ export function Header({ onMenuClick }: HeaderProps) {
           </div>
         </div>
 
-        {/* Right side - Notifications and user menu */}
+        {/* Right side - Theme and user menu */}
         <div className="flex items-center gap-2">
           <div className="hidden sm:flex items-center gap-2">
             <ThemeToggle />
-            <LanguageToggle />
           </div>
-          
-          <Button variant="ghost" size="sm" className="relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-xs text-white flex items-center justify-center">
-              3
-            </span>
-          </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

@@ -29,34 +29,34 @@ const primaryActions: QuickAction[] = [
   {
     title: 'New Sale',
     description: 'Process a new transaction',
-    href: '/pos',
+    href: '/sales',
     icon: ShoppingCart,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50 hover:bg-blue-100',
+    color: 'text-blue-600 dark:text-blue-400',
+    bgColor: 'bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900',
   },
   {
     title: 'Returns & Exchanges',
     description: 'Process returns and exchanges',
-    href: '/pos?tab=returns',
+    href: '/sales',
     icon: RotateCcw,
-    color: 'text-amber-600',
-    bgColor: 'bg-amber-50 hover:bg-amber-100',
+    color: 'text-amber-600 dark:text-amber-400',
+    bgColor: 'bg-amber-50 hover:bg-amber-100 dark:bg-amber-950 dark:hover:bg-amber-900',
   },
   {
     title: 'Add Expense',
     description: 'Record business expense',
-    href: '/expenses/new',
+    href: '/expenses',
     icon: Receipt,
-    color: 'text-red-600',
-    bgColor: 'bg-red-50 hover:bg-red-100',
+    color: 'text-red-600 dark:text-red-400',
+    bgColor: 'bg-red-50 hover:bg-red-100 dark:bg-red-950 dark:hover:bg-red-900',
   },
   {
     title: 'Manage Inventory',
     description: 'Add or update products',
     href: '/inventory',
     icon: Package,
-    color: 'text-green-600',
-    bgColor: 'bg-green-50 hover:bg-green-100',
+    color: 'text-green-600 dark:text-green-400',
+    bgColor: 'bg-green-50 hover:bg-green-100 dark:bg-green-950 dark:hover:bg-green-900',
   },
 ]
 
@@ -66,40 +66,40 @@ const secondaryActions: QuickAction[] = [
     description: 'View and manage customers',
     href: '/customers',
     icon: Users,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50 hover:bg-purple-100',
+    color: 'text-purple-600 dark:text-purple-400',
+    bgColor: 'bg-purple-50 hover:bg-purple-100 dark:bg-purple-950 dark:hover:bg-purple-900',
   },
   {
     title: 'View Reports',
     description: 'Business analytics',
     href: '/reports',
     icon: BarChart3,
-    color: 'text-indigo-600',
-    bgColor: 'bg-indigo-50 hover:bg-indigo-100',
+    color: 'text-indigo-600 dark:text-indigo-400',
+    bgColor: 'bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950 dark:hover:bg-indigo-900',
   },
   {
-    title: 'Payment Tracking',
-    description: 'Manage payments',
-    href: '/payments',
+    title: 'Suppliers',
+    description: 'Manage suppliers',
+    href: '/suppliers',
     icon: CreditCard,
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50 hover:bg-orange-100',
+    color: 'text-orange-600 dark:text-orange-400',
+    bgColor: 'bg-orange-50 hover:bg-orange-100 dark:bg-orange-950 dark:hover:bg-orange-900',
   },
   {
-    title: 'Generate Invoice',
-    description: 'Create new invoice',
-    href: '/invoices/new',
+    title: 'Products',
+    description: 'Manage products',
+    href: '/products',
     icon: FileText,
-    color: 'text-teal-600',
-    bgColor: 'bg-teal-50 hover:bg-teal-100',
+    color: 'text-teal-600 dark:text-teal-400',
+    bgColor: 'bg-teal-50 hover:bg-teal-100 dark:bg-teal-950 dark:hover:bg-teal-900',
   },
   {
     title: 'Settings',
     description: 'Business settings',
     href: '/settings',
     icon: Settings,
-    color: 'text-gray-600',
-    bgColor: 'bg-gray-50 hover:bg-gray-100',
+    color: 'text-gray-600 dark:text-gray-400',
+    bgColor: 'bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700',
   },
 ]
 
@@ -124,19 +124,16 @@ export function QuickActions() {
                 <Button
                   variant="ghost"
                   className={cn(
-                    "h-auto p-4 justify-start transition-colors",
+                    "h-auto p-4 justify-start transition-colors w-full",
                     action.bgColor
                   )}
                 >
                   <div className="flex items-center gap-3 w-full">
-                    <div className={cn(
-                      "p-2 rounded-lg",
-                      action.color.replace('text-', 'bg-').replace('-600', '-100')
-                    )}>
+                    <div className="p-2 rounded-lg bg-background/50">
                       <action.icon className={cn("h-5 w-5", action.color)} />
                     </div>
                     <div className="text-left">
-                      <div className="font-medium text-sm">{action.title}</div>
+                      <div className="font-medium text-sm text-foreground">{action.title}</div>
                       <div className="text-xs text-muted-foreground">
                         {action.description}
                       </div>
@@ -160,12 +157,12 @@ export function QuickActions() {
                   variant="ghost"
                   size="sm"
                   className={cn(
-                    "h-auto p-3 flex-col gap-2 transition-colors",
+                    "h-auto p-3 flex-col gap-2 transition-colors w-full",
                     action.bgColor
                   )}
                 >
                   <action.icon className={cn("h-5 w-5", action.color)} />
-                  <span className="text-xs font-medium">{action.title}</span>
+                  <span className="text-xs font-medium text-foreground">{action.title}</span>
                 </Button>
               </Link>
             ))}

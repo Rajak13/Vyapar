@@ -468,6 +468,16 @@ export const saleQueries = {
     if (error) throw error
     return data as string
   },
+
+  // Delete sale
+  delete: async (id: string) => {
+    const { error } = await supabase
+      .from('sales')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  },
 }
 
 // Payment queries

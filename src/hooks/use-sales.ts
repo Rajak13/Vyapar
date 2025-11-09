@@ -128,3 +128,43 @@ export function useUpdateSale() {
     },
   })
 }
+
+// Delete sale mutation
+export function useDeleteSale() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => saleQueries.delete(id),
+    onMutate: async (id) => {
+      // Get sale data before deletion for cleanup
+      const sale = queryClient.getQueryData<Sale>(queryKeys.sale(id))
+      return { sale }
+    },
+    onSuccess: (_, id, context) => {
+      // Remove from cache
+      queryClient.removeQueries({ queryKey: queryKeys.sale(id) })
+      
+      // Invalidate related queries
+      if (context?.sale) {
+        queryClient.invalidateQueries({ 
+          queryKey: queryKeys.businessSales(context.sale.business_id) 
+        })
+        queryClient.invalidateQueries({ 
+          queryKey: queryKeys.dashboardMetrics(context.sale.business_id) 
+        })
+        
+        if (context.sale.customer_id) {
+          queryClient.invalidateQueries({ 
+            queryKey: queryKeys.customer(context.sale.customer_id) 
+          })
+        }
+      }
+      
+      toast.success('Sale deleted successfully')
+    },
+    onError: (error) => {
+      console.error('Failed to delete sale:', error)
+      toast.error('Failed to delete sale')
+    },
+  })
+}

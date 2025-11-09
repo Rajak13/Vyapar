@@ -5,6 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Search, Edit, Trash2, Phone, Mail, MapPin, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
@@ -20,6 +30,7 @@ export function SupplierList({ onEditSupplier }: SupplierListProps) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [deletingSupplier, setDeletingSupplier] = useState<Supplier | null>(null)
   
   const { user } = useAuth()
   const { data: businesses } = useBusinesses(user?.id || '')
@@ -51,20 +62,25 @@ export function SupplierList({ onEditSupplier }: SupplierListProps) {
     }
   }
 
-  const handleDeleteSupplier = async (supplierId: string) => {
-    if (!confirm('Are you sure you want to delete this supplier?')) return
+  const handleDeleteClick = (supplier: Supplier) => {
+    setDeletingSupplier(supplier)
+  }
+
+  const confirmDelete = async () => {
+    if (!deletingSupplier) return
 
     try {
       const supabase = createClient()
       const { error } = await supabase
         .from('suppliers')
         .update({ active: false })
-        .eq('id', supplierId)
+        .eq('id', deletingSupplier.id)
 
       if (error) throw error
       
-      setSuppliers(prev => prev.filter(s => s.id !== supplierId))
+      setSuppliers(prev => prev.filter(s => s.id !== deletingSupplier.id))
       toast.success('Supplier deleted successfully')
+      setDeletingSupplier(null)
     } catch (error: unknown) {
       console.error('Error deleting supplier:', error)
       toast.error('Failed to delete supplier')
@@ -165,7 +181,7 @@ export function SupplierList({ onEditSupplier }: SupplierListProps) {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleDeleteSupplier(supplier.id)}
+                    onClick={() => handleDeleteClick(supplier)}
                     className="text-red-600 hover:text-red-700"
                   >
                     <Trash2 className="h-3 w-3" />
@@ -176,6 +192,27 @@ export function SupplierList({ onEditSupplier }: SupplierListProps) {
           ))}
         </div>
       )}
+
+      <AlertDialog open={!!deletingSupplier} onOpenChange={() => setDeletingSupplier(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Supplier</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deletingSupplier?.name}</strong>? 
+              This will mark the supplier as inactive and they will no longer appear in your supplier list.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

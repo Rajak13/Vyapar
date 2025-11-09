@@ -1,22 +1,33 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Package, TrendingUp, Tag, Search } from 'lucide-react'
+import { Plus, Package, TrendingUp, Search, Trash2, Edit } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { ProductForm } from '@/components/inventory/product-form'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { useAuth } from '@/contexts/auth-context'
 import { useBusinesses } from '@/hooks/use-businesses'
-import { useProducts } from '@/hooks/use-products'
+import { useProducts, useDeleteProduct } from '@/hooks/use-products'
 import { formatNPR } from '@/lib/nepal-utils'
 import { Product } from '@/types/database'
 
 export default function ProductsPage() {
   const [showAddProduct, setShowAddProduct] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
 
@@ -24,6 +35,7 @@ export default function ProductsPage() {
   const { data: businesses } = useBusinesses(user?.id || '')
   const businessId = businesses?.[0]?.id
   const { data: products = [], isLoading } = useProducts(businessId || '')
+  const deleteProduct = useDeleteProduct()
 
   // Filter products
   const filteredProducts = products.filter(product => {
@@ -54,6 +66,21 @@ export default function ProductsPage() {
   const handleCloseForm = () => {
     setShowAddProduct(false)
     setEditingProduct(null)
+  }
+
+  const handleDeleteProduct = (product: Product, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setDeletingProduct(product)
+  }
+
+  const confirmDelete = () => {
+    if (deletingProduct) {
+      deleteProduct.mutate(deletingProduct.id, {
+        onSuccess: () => {
+          setDeletingProduct(null)
+        }
+      })
+    }
   }
 
   if (isLoading) {
@@ -156,7 +183,7 @@ export default function ProductsPage() {
       {/* Products Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredProducts.map((product) => (
-          <Card key={product.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleEditProduct(product)}>
+          <Card key={product.id} className="group relative hover:shadow-md transition-shadow">
             <CardContent className="p-4">
               <div className="aspect-square bg-gray-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
                 {product.images && product.images.length > 0 ? (
@@ -198,6 +225,27 @@ export default function ProductsPage() {
                     {product.category}
                   </Badge>
                 )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => handleEditProduct(product)}
+                  >
+                    <Edit className="h-3 w-3 mr-1" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={(e) => handleDeleteProduct(product, e)}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -243,6 +291,27 @@ export default function ProductsPage() {
           />
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deletingProduct} onOpenChange={() => setDeletingProduct(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Product</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deletingProduct?.name}</strong>? 
+              This action cannot be undone and will remove all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteProduct.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
