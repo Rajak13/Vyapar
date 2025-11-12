@@ -120,5 +120,6 @@ function getErrorSuggestion(errorMessage: string): string {
 
 // Export a function to run from browser console
 if (typeof window !== 'undefined') {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (window as any).testStorage = testStorageAccess
 }
