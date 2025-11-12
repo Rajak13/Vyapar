@@ -134,33 +134,37 @@ export function useDeleteSale() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) => saleQueries.delete(id),
-    onMutate: async (id) => {
-      // Get sale data before deletion for cleanup
-      const sale = queryClient.getQueryData<Sale>(queryKeys.sale(id))
-      return { sale }
+    mutationFn: async (id: string) => {
+      // Get sale data first to restore stock
+      const sale = await saleQueries.getById(id)
+      
+      // Delete the sale (triggers will handle stock restoration)
+      await saleQueries.delete(id)
+      
+      return sale
     },
-    onSuccess: (_, id, context) => {
+    onSuccess: (sale) => {
       // Remove from cache
-      queryClient.removeQueries({ queryKey: queryKeys.sale(id) })
+      queryClient.removeQueries({ queryKey: queryKeys.sale(sale.id) })
       
       // Invalidate related queries
-      if (context?.sale) {
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.businessSales(sale.business_id) 
+      })
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.businessProducts(sale.business_id) 
+      })
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.dashboardMetrics(sale.business_id) 
+      })
+      
+      if (sale.customer_id) {
         queryClient.invalidateQueries({ 
-          queryKey: queryKeys.businessSales(context.sale.business_id) 
+          queryKey: queryKeys.customer(sale.customer_id) 
         })
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.dashboardMetrics(context.sale.business_id) 
-        })
-        
-        if (context.sale.customer_id) {
-          queryClient.invalidateQueries({ 
-            queryKey: queryKeys.customer(context.sale.customer_id) 
-          })
-        }
       }
       
-      toast.success('Sale deleted successfully')
+      toast.success('Sale deleted and stock restored')
     },
     onError: (error) => {
       console.error('Failed to delete sale:', error)

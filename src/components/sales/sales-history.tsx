@@ -5,12 +5,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Search, Eye, Receipt, Calendar, User, DollarSign } from 'lucide-react'
+import { Search, Eye, Receipt, Calendar, User, DollarSign, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
 import { useBusinesses } from '@/hooks/use-businesses'
+import { useDeleteSale } from '@/hooks/use-sales'
 import { formatNPR } from '@/lib/nepal-utils'
 import { toast } from 'sonner'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface SalesHistoryProps {
   businessId?: string
@@ -40,6 +51,9 @@ export function SalesHistory({ businessId }: SalesHistoryProps) {
       unit_price: number
     }>
   } | null>(null)
+  const [saleToDelete, setSaleToDelete] = useState<string | null>(null)
+  
+  const deleteSaleMutation = useDeleteSale()
 
   const { user } = useAuth()
   const { data: businesses } = useBusinesses(user?.id || '')
@@ -81,6 +95,18 @@ export function SalesHistory({ businessId }: SalesHistoryProps) {
     sale.invoice_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
     sale.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase())
   )
+
+  const handleDeleteSale = async (saleId: string) => {
+    try {
+      await deleteSaleMutation.mutateAsync(saleId)
+      toast.success('Sale deleted successfully. Stock has been restored.')
+      setSaleToDelete(null)
+      fetchSales() // Refresh the list
+    } catch (error) {
+      console.error('Error deleting sale:', error)
+      toast.error('Failed to delete sale')
+    }
+  }
 
   if (isLoading) {
     return (
@@ -154,14 +180,23 @@ export function SalesHistory({ businessId }: SalesHistoryProps) {
                         {sale.payment_status}
                       </Badge>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setSelectedSale(sale)}
-                    >
-                      <Eye className="h-3 w-3 mr-1" />
-                      View
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setSelectedSale(sale)}
+                      >
+                        <Eye className="h-3 w-3 mr-1" />
+                        View
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setSaleToDelete(sale.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -227,7 +262,17 @@ export function SalesHistory({ businessId }: SalesHistoryProps) {
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-2">
+              <div className="flex justify-between space-x-2">
+                <Button 
+                  variant="destructive" 
+                  onClick={() => {
+                    setSaleToDelete(selectedSale.id)
+                    setSelectedSale(null)
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Sale
+                </Button>
                 <Button variant="outline" onClick={() => setSelectedSale(null)}>
                   Close
                 </Button>
@@ -236,6 +281,28 @@ export function SalesHistory({ businessId }: SalesHistoryProps) {
           </Card>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!saleToDelete} onOpenChange={() => setSaleToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Sale?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this sale and restore the stock for all items. 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => saleToDelete && handleDeleteSale(saleToDelete)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
